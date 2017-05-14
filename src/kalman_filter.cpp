@@ -1,11 +1,12 @@
 #include "kalman_filter.h"
-
+#include "tools.h"
 #include <stdlib.h>
 #include <iostream>
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+# define PI           3.14159265358979323846
 KalmanFilter::KalmanFilter() {}
 
 KalmanFilter::~KalmanFilter() {}
@@ -60,30 +61,41 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   TODO:
     * update the state by using Extended Kalman Filter equations
   */
-  float px = x_[0];
-  float py = x_[1];
-  float vx = x_[2];
-  float vy = x_[3];
-  
-  if((px * px < 0.00001) || (py * py < 0.00001))
+  double px = x_[0];
+  double py = x_[1];
+  double vx = x_[2];
+  double vy = x_[3];
+   MatrixXd hx =VectorXd(3);
+  if(((px * px) < 0.00001) || ((py * py) < 0.00001))
 	{
-	return;
-	}
-  
-  MatrixXd hx = MatrixXd(3, 1);
-  
+	cout << "Error while converting to polar coordinates: Division by Zero" << endl;
+	hx <<0,
+		0,
+		0;
+	//return;
+	}else{
+ 
+	//cout << "px " << px << "  py "<< py << endl;
+	double rho = sqrt(px * px + py * py);
+	const double phi = atan2(py, px);
+	const double rho_dot = (px * vx + py * vy) / (rho);
   hx <<sqrt(px*px + py*py),
 			atan2(py,px),
 			(px*vx + py*vy)/(sqrt(px*px + py*py));
-	
-	while (hx(1) < -M_PI)
-		hx(1) += 2 * M_PI;
-		while (hx(1) > M_PI)
-		hx(1) -= 2 * M_PI;
-	
+			
+	hx << rho, phi, rho_dot;
+	//cout << hx << endl;
+	}
+	 Tools tools = Tools();
+	MatrixXd Hj_ = tools.CalculateJacobian(x_);
 	VectorXd y = z - hx;
-	MatrixXd Ht = H_.transpose();
-	MatrixXd S = H_ * P_ * Ht + R_;
+	// normalizing y(1)
+	while (y(1) < -PI)
+		y(1) += 2 * PI;
+		while (y(1) > PI)
+		y(1) -= 2 * PI;
+	MatrixXd Ht = Hj_.transpose();
+	MatrixXd S = Hj_ * P_ * Ht + R_;
 	MatrixXd Si = S.inverse();
 	MatrixXd PHt = P_ * Ht;
 	MatrixXd K = PHt * Si;
@@ -92,5 +104,6 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	x_ = x_ + (K * y);
 	long x_size = x_.size();
 	MatrixXd I = MatrixXd::Identity(x_size, x_size);
-	P_ = (I - K * H_) * P_;
+	P_ = (I - K * Hj_) * P_;
+	
 }

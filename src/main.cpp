@@ -39,7 +39,7 @@ void check_arguments(int argc, char* argv[]) {
 void check_files(ifstream& in_file, string& in_name,
                  ofstream& out_file, string& out_name) {
   if (!in_file.is_open()) {
-    cerr << "Cannot open input file: " << in_name << endl;
+    cerr << "Cannot open input file123: " << in_name << endl;
     exit(EXIT_FAILURE);
   }
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 
   string in_file_name_ = argv[1];
   ifstream in_file_(in_file_name_.c_str(), ifstream::in);
-
+	cout << in_file_name_ << endl;
   string out_file_name_ = argv[2];
   ofstream out_file_(out_file_name_.c_str(), ofstream::out);
 
